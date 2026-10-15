@@ -1,0 +1,5 @@
+# Capturas REA podem conter URLs, identificadores e metadados sensíveis.
+_captures/
+*.har
+*.saz
+*.pcap

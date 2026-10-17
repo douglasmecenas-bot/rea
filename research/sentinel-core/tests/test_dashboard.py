@@ -82,6 +82,28 @@ class DashboardTests(unittest.TestCase):
         s,_,_=self.request("/api/report?name=..%2Fsecret.json")
         self.assertEqual(s,400)
 
+    def test_alerts_replay_only_and_no_live_trading(self):
+        s,_,body=self.request("/api/alerts")
+        self.assertEqual(s,200)
+        result=json.loads(body)
+        self.assertEqual(result["alerts"],[])
+        self.assertFalse(result["execution_enabled"])
+        (self.reports/"alerts.json").write_text(json.dumps({
+            "mode":"offline_replay_no_trades",
+            "events":[{"event_type":"PRELIMINARY","symbol":"BTCUSDT",
+                       "side":"LONG","at_ms":1780000000000,
+                       "rsi14":48,"observed_price":100,
+                       "preliminary_seen":False}],
+        }),encoding="utf-8")
+        s,_,body=self.request("/api/alerts")
+        self.assertEqual(s,200)
+        self.assertEqual(json.loads(body)["alerts"][0]["event_type"],"PRELIMINARY")
+        (self.reports/"alerts.json").write_text(json.dumps({
+            "mode":"unknown_live_source","events":[{"event_type":"CONFIRMED"}],
+        }),encoding="utf-8")
+        s,_,body=self.request("/api/alerts")
+        self.assertEqual(s,400)
+
     def test_remote_host_denied_even_on_loopback(self):
         s,_,raw=self.request("/api/reports",host="bad.example.com")
         self.assertEqual(s,403)
@@ -100,7 +122,7 @@ class DashboardTests(unittest.TestCase):
 
     def test_static_markup_contains_all_views(self):
         for word in ('id="overview"','id="research"','id="reports"',
-                     'id="method"','id="chart"','id="reportList"'):
+                     'id="method"','id="signals"','id="chart"','id="reportList"'):
             self.assertIn(word,DOCUMENT)
 
 

@@ -110,7 +110,6 @@ def main() -> int:
             if a.kind=="candles":
                 store.put_candles(a.symbol,a.interval,data)
                 # Ler de volta para verificar persistência real.
-                step=data[-1].open_time-data[-2].open_time if len(data)>1 else None
                 store.get_candles(a.symbol,a.interval,data[0].open_time,
                                   data[-1].close_time+1)
             else:

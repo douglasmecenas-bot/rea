@@ -83,8 +83,7 @@ def evaluate_walk_forward(
             or train_bars < 200 or test_bars < 24 or warmup_bars < 800
             or not (1 <= folds <= 24)):
         raise ValueError("Folds ou janelas inválidas; warmup >= 800 candles 15m")
-    first_test = train_bars + warmup_bars
-    required = first_test + folds * test_bars
+    required = train_bars + warmup_bars + folds * test_bars
     if len(fast_15m) < required:
         raise ValueError(
             f"Histórico insuficiente: mínimo {required} candles 15m; "
@@ -93,6 +92,9 @@ def evaluate_walk_forward(
     if not trend_1h or not btc_1h:
         raise ValueError("Contexto de regime 1h ausente")
 
+    # Usar as janelas mais RECENTES, não abandonar o fim do histórico
+    # quando o pesquisador coletou um período maior que o mínimo.
+    first_test = len(fast_15m) - folds * test_bars
     all_folds = []
     for n in range(folds):
         test_start_idx = first_test + n * test_bars

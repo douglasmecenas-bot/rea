@@ -24,8 +24,11 @@ jobs:
       - name: Read-only BTCUSDT 15m klines and ticker (NO API KEY / NO ORDERS)
         working-directory: research/sentinel-core
         run: |
+          set +e
           python -m sentinel_core.exchange_probe > public-probe-report.json
+          code=$?
           cat public-probe-report.json
+          exit "$code"
       - name: Save small sanitized probe evidence
         if: always()
         uses: actions/upload-artifact@v4

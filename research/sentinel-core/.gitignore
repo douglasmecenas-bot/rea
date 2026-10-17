@@ -1,0 +1,8 @@
+# Backfills e relatórios locais não devem ser commitados.
+data/
+runs/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db
+*holdout*.json

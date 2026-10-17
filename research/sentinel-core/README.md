@@ -1,3 +1,15 @@
+# Sentinel Atlas — v0.4: auditoria e sinais históricos
+
+**Novo:** painel web em `127.0.0.1`, comparador de exportações Sentinel/Freqtrade/Jesse, replay offline de sinais PRELIMINARY/CONFIRMED/INVALIDATED/EXPIRED, documentação de escopo e testes Chromium. [Manual completo](V04-GUIDE.md) · [Fronteiras do produto](PRODUCT-BOUNDARIES.md).
+
+**Não há dinheiro real nem alertas live.** A Binance Futures pública retornou HTTP 451 no runner do GitHub; nada aqui contorna acesso bloqueado.
+
+Iniciar interface local, na pasta `research/sentinel-core/`:
+
+    python -m sentinel_core.dashboard --db data/sentinel.sqlite --reports-dir runs --port 8765
+
+---
+
 # Sentinel Core — v0.3 laboratório quantitativo independente
 
 **Atualização v0.3:** walk-forward com múltiplas janelas OOS sequenciais, benchmarks simples, sonda de disponibilidade de dados Binance e importação OFFLINE de CSV autorizado, para evitar dependência de endpoints inacessíveis. Detalhes: [V03-GUIDE.md](V03-GUIDE.md).

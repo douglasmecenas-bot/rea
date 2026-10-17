@@ -1,0 +1,83 @@
+name: Sentinel Atlas local interface smoke
+
+on:
+  push:
+    branches:
+      - "feat/sentinel-v04-*"
+    paths:
+      - "research/sentinel-core/sentinel_core/dashboard.py"
+      - "research/sentinel-core/sentinel_core/webui.py"
+      - ".github/workflows/sentinel-dashboard-smoke.yml"
+  pull_request:
+    paths:
+      - "research/sentinel-core/sentinel_core/dashboard.py"
+      - "research/sentinel-core/sentinel_core/webui.py"
+      - ".github/workflows/sentinel-dashboard-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-local:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate inline UI JavaScript
+        working-directory: research/sentinel-core
+        run: |
+          python - <<'PY'
+          from sentinel_core.webui import DOCUMENT
+          from pathlib import Path
+          js=DOCUMENT.split("<script>",1)[1].split("</script>",1)[0]
+          Path("/tmp/sentinel-dashboard-check.js").write_text(js)
+          print("UI JS bytes:",len(js))
+          PY
+          node --check /tmp/sentinel-dashboard-check.js
+      - name: Start offline read-only dashboard
+        working-directory: research/sentinel-core
+        run: |
+          python -m sentinel_core.dashboard \
+            --db /tmp/sentinel-empty.sqlite --reports-dir /tmp/sentinel-empty-reports \
+            --port 8765 > /tmp/sentinel-server.log 2>&1 &
+          echo $! > /tmp/sentinel-server.pid
+          sleep 2
+          curl --fail --silent http://127.0.0.1:8765/api/health > /tmp/health.json
+          python - <<'PY'
+          import json
+          obj=json.load(open("/tmp/health.json"))
+          assert obj["trading_enabled"] is False
+          assert obj["market_data_live"] is False
+          print("Offline API healthy; orders disabled")
+          PY
+      - name: Validate localhost UI in Chromium
+        run: |
+          BROWSER="$(command -v chromium || command -v chromium-browser || command -v google-chrome || true)"
+          if [ -z "$BROWSER" ]; then echo "Missing Chrome/Chromium"; exit 1; fi
+          "$BROWSER" --headless --no-sandbox --disable-gpu --disable-dev-shm-usage \
+            --window-size=1440,900 --virtual-time-budget=5000 \
+            --screenshot=/tmp/sentinel-atlas-local.png http://127.0.0.1:8765 \
+            > /tmp/browser.log 2>&1
+          test -s /tmp/sentinel-atlas-local.png
+          "$BROWSER" --headless --no-sandbox --disable-gpu --disable-dev-shm-usage \
+            --virtual-time-budget=4000 --dump-dom http://127.0.0.1:8765 \
+            > /tmp/sentinel-dom.html 2>/dev/null
+          grep -q "Sem cotações em tempo real" /tmp/sentinel-dom.html
+          grep -q "PAPER ONLY" /tmp/sentinel-dom.html
+      - name: Upload local screenshot and health (not market data)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-atlas-offline-visual-smoke
+          retention-days: 7
+          path: |
+            /tmp/sentinel-atlas-local.png
+            /tmp/health.json
+            /tmp/sentinel-server.log

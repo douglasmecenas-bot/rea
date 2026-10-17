@@ -1,0 +1,35 @@
+name: Sentinel public Binance connectivity probe
+
+# A sonda recebeu HTTP 451 no GitHub Actions. Evitar disparos repetidos:
+# acionar manualmente somente após confirmar a disponibilidade/autorização de acesso.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Read-only BTCUSDT 15m klines and ticker (NO API KEY / NO ORDERS)
+        working-directory: research/sentinel-core
+        run: |
+          set +e
+          python -m sentinel_core.exchange_probe > public-probe-report.json
+          code=$?
+          cat public-probe-report.json
+          exit "$code"
+      - name: Save small sanitized probe evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-binance-public-probe
+          path: research/sentinel-core/public-probe-report.json
+          if-no-files-found: warn
+          retention-days: 7

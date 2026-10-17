@@ -1,3 +1,11 @@
+# Sentinel Core — v0.3 laboratório quantitativo independente
+
+**Atualização v0.3:** walk-forward com múltiplas janelas OOS sequenciais, benchmarks simples, sonda de disponibilidade de dados Binance e importação OFFLINE de CSV autorizado, para evitar dependência de endpoints inacessíveis. Detalhes: [V03-GUIDE.md](V03-GUIDE.md).
+
+**Verificação externa:** O GitHub Actions recebeu HTTP 451 da API Binance Futures em 17/10/2026; portanto nenhum backtest real foi executado neste ambiente. Não contornaremos o bloqueio. A suíte offline é executada com dados sintéticos e é verificada pela CI. Nenhuma ordem real, credencial ou serviço pago é utilizado.
+
+---
+
 # Sentinel Core — v0.2 em desenvolvimento
 
 **Atualização:** implementada coleta histórica paginada, SQLite com validação de cobertura, funding histórico e simulador com holdout cronológico. A v0.1 continua preservada como baseline. **Sem ordens reais e sem uso de dinheiro.**

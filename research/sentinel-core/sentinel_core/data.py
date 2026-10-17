@@ -53,7 +53,9 @@ class BinancePublic:
                 if len(raw) > 2_000_000:
                     raise MarketDataError("Resposta maior que o limite")
                 return json.loads(raw)
-        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as exc:
+        except HTTPError as exc:
+            raise MarketDataError(f"Binance HTTP {exc.code}; acesso público indisponível") from exc
+        except (URLError, TimeoutError, json.JSONDecodeError) as exc:
             raise MarketDataError(f"Binance indisponível: {type(exc).__name__}") from exc
 
     def klines(self, symbol: str, interval: str, limit: int = 500,

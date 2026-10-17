@@ -1,4 +1,5 @@
 import unittest
+from urllib.error import HTTPError
 from unittest.mock import patch
 from sentinel_core.data import BinancePublic, MarketDataError
 
@@ -23,6 +24,16 @@ class DataTests(unittest.TestCase):
             candles=c.klines("BTCUSDT","15m",2,now_ms=1000000)
             self.assertEqual(len(candles),1)
             self.assertEqual(candles[0].close,101)
+
+    def test_preserve_http_error_code_without_sensitive_payload(self):
+        c = BinancePublic()
+        with patch.object(c._opener, "open",
+                          side_effect=HTTPError("https://fapi.binance.com", 451,
+                                                "Unavailable for Legal Reasons", None, None)):
+            with self.assertRaises(MarketDataError) as cm:
+                c.ticker24("BTCUSDT")
+        self.assertIn("451", str(cm.exception))
+        self.assertNotIn("BTCUSDT?api", str(cm.exception))
 
     def test_ticker_validation(self):
         c=BinancePublic()

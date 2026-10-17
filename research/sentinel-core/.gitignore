@@ -6,3 +6,6 @@ runs/
 *.sqlite-wal
 *.db
 *holdout*.json
+
+# Saída da sonda pública local
+public-probe-report.json

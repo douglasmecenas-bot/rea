@@ -95,6 +95,9 @@ def _sentinel(doc: dict) -> list[Trade]:
     src = doc.get("evaluation",doc)
     if "walk_forward" in src:
         segments = [f["test"] for f in src["walk_forward"]["results"]]
+    elif "train" in src and "test" in src:
+        # Comparador sempre usa apenas dados do TESTE fora da amostra.
+        segments = [src["test"]]
     elif "trade_log" in src:
         segments = [src]
     elif "trades" in src and isinstance(src["trades"], list):

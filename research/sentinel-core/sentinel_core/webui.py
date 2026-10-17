@@ -44,6 +44,7 @@ svg{max-width:100%;height:100%}.gridlines line{stroke:#2a3440;stroke-dasharray:3
 <div><div class="eyebrow">Research workspace</div><nav>
 <button data-view="overview" class="active">◫ &nbsp; Visão geral</button>
 <button data-view="research">⌗ &nbsp; Dados históricos</button>
+<button data-view="signals">◎ &nbsp; Alertas simulados</button>
 <button data-view="reports">▣ &nbsp; Backtests &amp; relatórios</button>
 <button data-view="method">◇ &nbsp; Metodologia</button>
 </nav></div>
@@ -65,6 +66,9 @@ svg{max-width:100%;height:100%}.gridlines line{stroke:#2a3440;stroke-dasharray:3
 </div></div></section>
 <section class="view" id="research"><div class="panel"><div class="panelHead"><div><h2>Conjuntos de dados registrados</h2><p class="small">Cobertura registrada no arquivo local — autenticidade externa não comprovada.</p></div><button id="refresh" class="btn">Atualizar</button></div>
 <div class="tableWrap"><table><thead><tr><th>Ativo</th><th>Intervalo</th><th>Candles</th><th>Primeiro candle UTC</th><th>Último candle UTC</th><th>Origem</th></tr></thead><tbody id="marketTable"></tbody></table></div><div class="meta" id="marketInfo"></div></div></section>
+<section class="view" id="signals">
+<div class="panel"><div class="panelHead"><div><h2>Ciclo de alertas em duas etapas</h2><p class="small">Eventos históricos PRELIMINARY → CONFIRMED / INVALIDATED / EXPIRED. Nenhuma publicação ao vivo.</p></div><button class="btn" id="refreshSignals">Atualizar</button></div>
+<div class="tableWrap"><table><thead><tr><th>Momento UTC</th><th>Ativo</th><th>Estado</th><th>Direção</th><th>Preço observado</th><th>RSI14</th><th>Histórico</th></tr></thead><tbody id="signalsTable"></tbody></table></div><div class="meta" id="signalsInfo"></div></div></section>
 <section class="view" id="reports"><div class="grid2"><div class="panel"><div class="panelHead"><div><h2>Relatórios de pesquisa</h2><p class="small">Arquivos JSON produzidos por avaliação local.</p></div><button id="refreshReports" class="btn">Atualizar</button></div><div id="reportList" class="stack"></div></div>
 <div class="panel"><div class="panelHead"><h2>Detalhes do relatório</h2><span class="pill">RESEARCH</span></div><div id="reportDetail" class="empty">Selecione um arquivo de relatório para visualizar as métricas, os períodos de teste e as ressalvas.</div></div></div></section>
 <section class="view" id="method"><div class="panel"><div class="panelHead"><h2>Regras de interpretação</h2></div>
@@ -89,7 +93,7 @@ function empty(node,msg){node.replaceChildren(element("div",msg,"empty"))}
 function activate(view){
  state.view=view;document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active",x.id===view));
  document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x.dataset.view===view));
- const titles={overview:["Visão geral do mercado","Pesquisa independente, somente dados locais."],research:["Qualidade e proveniência","Séries armazenadas com rastreabilidade."],reports:["Backtesting & estratégias","Resultados experimentais auditáveis."],method:["Metodologia e segurança","As regras que tornam cada resultado verificável."]};
+ const titles={overview:["Visão geral do mercado","Pesquisa independente, somente dados locais."],research:["Qualidade e proveniência","Séries armazenadas com rastreabilidade."],signals:["Alertas simulados","Ciclos históricos: antecipação, confirmação e invalidação."],reports:["Backtesting & estratégias","Resultados experimentais auditáveis."],method:["Metodologia e segurança","As regras que tornam cada resultado verificável."]};
  $("pageTitle").textContent=titles[view][0];$("pageSubtitle").textContent=titles[view][1];
 }
 document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>activate(b.dataset.view)));
@@ -131,6 +135,24 @@ async function loadChart(){
  $("chartInfo").textContent=symbol+" • "+interval+" • "+d.candles.length+" candles • último fechamento "+numeric(last.close)+" • "+fmt(last.close_time)+" • origem não auditada";
  }catch(e){empty($("chart"),"Falha ao consultar candles: "+e.message)}
 }
+async function loadSignals(){
+ const target=$("signalsTable");target.replaceChildren();
+ try{
+  const x=await api("/api/alerts");const alerts=x.alerts||[];
+  $("signalsInfo").textContent=alerts.length+" alerta(s) no arquivo local runs/alerts.json; esses eventos NÃO são sinais em tempo real.";
+  if(!alerts.length){
+   const tr=element("tr"),td=element("td","Sem eventos. Gere o replay offline para visualizar os estágios.");
+   td.colSpan=7;tr.append(td);target.append(tr);return;
+  }
+  alerts.slice().reverse().forEach(a=>{
+   const tr=element("tr");
+   [fmt(a.at_ms),a.symbol||"—",a.event_type||"—",a.side||"—",
+    numeric(a.observed_price),numeric(a.rsi14),
+    a.preliminary_seen?"Com antecipação":"Sem antecipação prévia"].forEach(t=>tr.append(element("td",t)));
+   target.append(tr);
+  });
+ }catch(e){$("signalsInfo").textContent="Falha na leitura local: "+e.message}
+}
 async function loadReports(){
  const list=$("reportList");try{const d=await api("/api/reports");state.reports=d.reports||[];
  $("metricReports").textContent=integer(state.reports.length);
@@ -161,7 +183,7 @@ async function loadReport(name){
  }catch(e){empty(target,"Não foi possível abrir o relatório: "+e.message)}
 }
 $("symbol").addEventListener("change",loadChart);$("timeframe").addEventListener("change",loadChart);
-$("refresh").addEventListener("click",loadMarkets);$("refreshReports").addEventListener("click",loadReports);
-Promise.all([loadMarkets(),loadReports()]);
+$("refresh").addEventListener("click",loadMarkets);$("refreshReports").addEventListener("click",loadReports);$("refreshSignals").addEventListener("click",loadSignals);
+Promise.all([loadMarkets(),loadReports(),loadSignals()]);
 </script>
 </body></html>"""

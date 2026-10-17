@@ -1,12 +1,8 @@
 name: Sentinel public Binance connectivity probe
 
+# A sonda recebeu HTTP 451 no GitHub Actions. Evitar disparos repetidos:
+# acionar manualmente somente após confirmar a disponibilidade/autorização de acesso.
 on:
-  push:
-    branches:
-      - "feat/sentinel-v03-*"
-    paths:
-      - "research/sentinel-core/sentinel_core/exchange_probe.py"
-      - ".github/workflows/sentinel-binance-public-probe.yml"
   workflow_dispatch:
 
 permissions:

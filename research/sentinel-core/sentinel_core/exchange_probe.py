@@ -18,7 +18,7 @@ def probe(symbol: str = "BTCUSDT") -> dict:
     client = BinancePublic(timeout=10)
     observed_at = int(time.time() * 1000)
     try:
-        candles = client.klines(symbol, "15m", limit=100, now_ms=observed_at)
+        candles = client.klines(symbol, "15m", limit=101, now_ms=observed_at)
         if len(candles) != 100:
             raise MarketDataError(
                 f"Cobertura insuficiente: {len(candles)}/100 velas fechadas")

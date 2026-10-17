@@ -1,0 +1,33 @@
+name: Sentinel Core offline tests
+
+on:
+  push:
+    branches:
+      - "feat/sentinel-core-engine-*"
+    paths:
+      - "research/sentinel-core/**"
+      - ".github/workflows/sentinel-core-tests.yml"
+  pull_request:
+    paths:
+      - "research/sentinel-core/**"
+      - ".github/workflows/sentinel-core-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Offline tests (NO ORDERS and NO API keys)
+        working-directory: research/sentinel-core
+        run: python -m unittest discover -s tests -v
+      - name: Compile source
+        working-directory: research/sentinel-core
+        run: python -m compileall -q sentinel_core tests

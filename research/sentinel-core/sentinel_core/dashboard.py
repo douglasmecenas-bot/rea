@@ -103,7 +103,16 @@ def build_handler(db_path: str | Path, reports_dir: str | Path):
             self.end_headers()
             self.wfile.write(payload)
 
+        def _valid_host(self):
+            host=self.headers.get("Host","")
+            return host in ("localhost","127.0.0.1") or (
+                host.startswith("localhost:") and host[10:].isdigit()) or (
+                host.startswith("127.0.0.1:") and host[10:].isdigit())
+
         def do_GET(self):
+            # Impede acesso por nomes de domínio externos (DNS rebinding).
+            if not self._valid_host():
+                return self._send(_json({"error":"untrusted_host"}),403)
             split=urlsplit(self.path)
             params=parse_qs(split.query)
             try:

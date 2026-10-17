@@ -1,0 +1,52 @@
+name: REA browser readiness (local fixture)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/sentinel-rea-smoke.yml'
+      - 'research/benchmark-platformas/**'
+
+permissions:
+  contents: read
+
+jobs:
+  rea-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install REA from published official package
+        run: npm install --global rea-agents@latest
+      - name: Inspect CLI availability
+        run: |
+          node --version
+          rea --help > /tmp/rea-help.txt
+          head -30 /tmp/rea-help.txt
+      - name: Launch controlled local page in Chromium
+        run: |
+          mkdir -p /tmp/rea-fixture /tmp/rea-profile
+          printf '<!doctype html><html><body><main><h1>REA test page</h1><p>Owned local fixture; no third-party domain.</p></main></body></html>' > /tmp/rea-fixture/index.html
+          python3 -m http.server 4321 --directory /tmp/rea-fixture >/tmp/rea-http.log 2>&1 &
+          BROWSER="$(command -v chromium || command -v chromium-browser || command -v google-chrome || true)"
+          if [ -z "$BROWSER" ]; then echo 'Chromium missing' >&2; exit 1; fi
+          "$BROWSER" --headless --no-sandbox --disable-dev-shm-usage --disable-gpu \
+            --remote-debugging-port=9222 --remote-debugging-address=127.0.0.1 \
+            --user-data-dir=/tmp/rea-profile http://127.0.0.1:4321 >/tmp/rea-browser.log 2>&1 &
+          sleep 5
+      - name: Validate REA Chrome DevTools discovery
+        run: |
+          rea list-browser-targets http://127.0.0.1:9222 --json > /tmp/rea-targets.json
+          node -e 'const fs=require("node:fs");const t=fs.readFileSync("/tmp/rea-targets.json","utf8");JSON.parse(t);if(!t.includes("127.0.0.1:4321"))process.exit(1);console.log("REA CDP discovery passed on controlled local fixture");'
+      - name: Upload non-sensitive smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rea-local-browser-evidence
+          path: |
+            /tmp/rea-help.txt
+            /tmp/rea-targets.json
+          retention-days: 7

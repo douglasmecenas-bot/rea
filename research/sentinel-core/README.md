@@ -1,5 +1,12 @@
-# Sentinel Core — laboratório independente de trading
+# Sentinel Core — v0.2 em desenvolvimento
 
+**Atualização:** implementada coleta histórica paginada, SQLite com validação de cobertura, funding histórico e simulador com holdout cronológico. A v0.1 continua preservada como baseline. **Sem ordens reais e sem uso de dinheiro.**
+
+Para a versão nova, instruções de coleta e avaliação: [V02-GUIDE.md](V02-GUIDE.md). Os testes sintéticos são executados pelo GitHub Actions. Nenhuma estratégia foi comprovada lucrativa nem executada com históricos reais neste CI.
+
+---
+
+## Versão inicial v0.1 — referência
 **Status:** experimental v0.1 | **Ordens reais:** NÃO IMPLEMENTADAS | **Modo:** análise e backtest offline.
 
 Implementação nova e original em Python, apenas biblioteca padrão. Usa endpoints **públicos da Binance USD-M Futures**, sem chaves API e sem depender de EAssets, Pionex ou grupos de sinais pagos.

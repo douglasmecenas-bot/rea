@@ -86,6 +86,21 @@ def build_handler(db_path: str | Path, reports_dir: str | Path):
             raise FileNotFoundError("Relatório não encontrado")
         return json.loads(file.read_text(encoding="utf-8"))
 
+    def recent_alerts():
+        """Eventos de replay local, nunca sinais ao vivo."""
+        source=reports_dir/"alerts.json"
+        if not source.is_file() or source.is_symlink():
+            return []
+        if source.stat().st_size > FILE_LIMIT:
+            raise ValueError("Arquivo de alertas maior que o limite")
+        doc=json.loads(source.read_text(encoding="utf-8"))
+        if doc.get("mode") != "offline_replay_no_trades":
+            raise ValueError("Fonte de alertas não é replay offline validado")
+        events=doc.get("events")
+        if not isinstance(events,list):
+            raise ValueError("Eventos inválidos")
+        return events[-500:]
+
     class Handler(BaseHTTPRequestHandler):
         server_version="SentinelLocalResearch/0.4"
         def _send(self, payload: bytes, status=200, mime="application/json; charset=utf-8"):
@@ -135,6 +150,12 @@ def build_handler(db_path: str | Path, reports_dir: str | Path):
                     }))
                 if split.path=="/api/reports":
                     return self._send(_json({"reports":reports()}))
+                if split.path=="/api/alerts":
+                    return self._send(_json({
+                        "alerts":recent_alerts(),
+                        "source":"local_offline_replay_not_live",
+                        "execution_enabled":False,
+                    }))
                 if split.path=="/api/report":
                     return self._send(_json({
                         "report":get_report(params.get("name",[""])[0]),
